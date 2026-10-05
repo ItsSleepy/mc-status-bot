@@ -1,0 +1,16 @@
+[Unit]
+Description=EUGH Minecraft server status Discord bot
+After=network-online.target eugh.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sleepy
+WorkingDirectory=/home/sleepy/mc-status-bot
+EnvironmentFile=/home/sleepy/mc-status-bot/.env
+ExecStart=/home/sleepy/mc-status-bot/venv/bin/python3 /home/sleepy/mc-status-bot/bot.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
