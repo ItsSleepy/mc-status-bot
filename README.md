@@ -1,54 +1,46 @@
-# EUGH Status Bot
+# Minecraft Status Bot
 
-Posts a Discord embed showing whether the Minecraft server is online/offline
-and who's connected. It edits the SAME message on a timer (default every 5
-minutes) instead of spamming new messages, and also adds a `/mcstatus`
-slash command for an on-demand refresh.
+A Discord bot for a self-hosted Minecraft server. It keeps one live status message up to date, and when the server's modpack changes it posts a changelog of what was added, removed and updated.
 
-## Files already in place (deployed via Claude)
+## Features
 
-- `bot.py`, `requirements.txt`, `.env.example`, `mc-status-bot.service` are
-  all here in `~/mc-status-bot`.
-- `.env.example` already has your CHANNEL_ID filled in — just needs the
-  bot token.
+- **Live status message:** online or offline, players `x / max`, version, modpack version and who's on. The bot edits the **same** message every few minutes instead of posting new ones, `/mcstatus` refreshes it on demand, and `/modpack` shows the pack version.
+- **Presence:** the bot's own Discord status shows the player count, checked every 30 seconds.
+- **Modpack changelog:** it fingerprints the server's `mods/` folder by reading every jar's `neoforge.mods.toml` / `mods.toml` and manifest. When the set changes, it diffs against the last snapshot and posts what was added, removed and changed (with old → new versions), plus an optional download link for the pack.
+- **`modpack.py` CLI:** the same scanner works on its own to snapshot or diff two mod folders.
 
-## What's left to do
+If the server restarts, the message just shows offline until it's back. If the message is deleted, the next update posts a fresh one.
 
-1. **Rotate the bot token** at
-   https://discord.com/developers/applications → your app → Bot → Reset
-   Token (needed since the original was pasted in chat).
-2. Copy `.env.example` to `.env` and paste the new token in:
-   ```bash
-   cd ~/mc-status-bot
-   cp .env.example .env
-   nano .env   # fill in DISCORD_TOKEN
-   ```
-3. Create the venv and install dependencies (if not already done):
-   ```bash
-   python3 -m venv venv
-   ./venv/bin/pip install -r requirements.txt
-   ```
-4. Install and start the service:
-   ```bash
-   sudo cp mc-status-bot.service /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now mc-status-bot
-   sudo systemctl status mc-status-bot
-   ```
+## Setup
 
-Logs: `journalctl -u mc-status-bot -f`
+```bash
+python3 -m venv venv
+venv/bin/pip install -r requirements.txt
+cp .env.example .env        # bot token + channel ID
+venv/bin/python bot.py
+```
 
-## Optional — full player list instead of a capped sample
+`mc-status-bot.service` is the systemd unit I run it with.
 
-Add to `server.properties` and restart `eugh`:
+For the full player list, not just the capped sample, enable query in `server.properties`:
+
 ```
 enable-query=true
 query.port=25565
 ```
 
-## Notes
+## Settings
 
-- If `eugh` restarts, the bot just shows offline until it's back — no
-  special handling needed.
-- Tracked message ID lives in `status_message.json` next to the bot. If
-  you delete the message in Discord, it just posts a fresh one next update.
+| Variable | Default | |
+|---|---|---|
+| `DISCORD_TOKEN` | required | |
+| `CHANNEL_ID` | required | where the status message lives |
+| `MC_HOST` / `MC_PORT` | `localhost` / `25565` | |
+| `SERVER_LABEL` | `EUGH Server` | title of the status message |
+| `UPDATE_INTERVAL_MINUTES` | `5` | |
+| `SERVER_DIR` / `MODS_DIR` | | where the server and its mods live |
+| `MODPACK_CHANNEL_ID` | `CHANNEL_ID` | where changelogs are posted |
+| `PACK_DOWNLOAD_URL` | empty | link added to changelogs |
+| `MODPACK_CHECK_MINUTES` | `30` | |
+
+Built with Python, discord.py and mcstatus.
